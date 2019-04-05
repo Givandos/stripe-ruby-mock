@@ -37,11 +37,10 @@ module StripeMock
 
         subscription_plans = get_subscription_plans_from_params(params)
         customer = assert_existence :customer, $1, customers[$1]
-
-        if params[:source]
-          new_card = get_card_by_token(params.delete(:source))
-          add_card_to_object(:customer, new_card, customer)
-          customer[:default_source] = new_card[:id]
+        
+        if params[:default_source]
+          customer_card = get_customer_card_by_id(customer, params.delete(:default_source))
+          customer[:default_source] = customer_card
         end
 
         subscription = Data.mock_subscription({ id: (params[:id] || new_id('su')) })
@@ -88,11 +87,10 @@ module StripeMock
             end
           end
         end
-
-        if params[:source]
-          new_card = get_card_by_token(params.delete(:source))
-          add_card_to_object(:customer, new_card, customer)
-          customer[:default_source] = new_card[:id]
+        
+        if params[:default_source]
+          customer_card = get_customer_card_by_id(customer, params.delete(:default_source))
+          customer[:default_source] = customer_card
         end
 
         allowed_params = %w(customer application_fee_percent coupon items metadata plan quantity source tax_percent trial_end trial_period_days current_period_start created prorate billing_cycle_anchor billing days_until_due)
@@ -152,11 +150,10 @@ module StripeMock
 
         customer_id = subscription[:customer]
         customer = assert_existence :customer, customer_id, customers[customer_id]
-
-        if params[:source]
-          new_card = get_card_by_token(params.delete(:source))
-          add_card_to_object(:customer, new_card, customer)
-          customer[:default_source] = new_card[:id]
+        
+        if params[:default_source]
+          customer_card = get_customer_card_by_id(customer, params.delete(:default_source))
+          customer[:default_source] = customer_card
         end
 
         subscription_plans = get_subscription_plans_from_params(params)
@@ -280,6 +277,16 @@ module StripeMock
           message = "No such subscription: #{id}"
           raise Stripe::InvalidRequestError.new(message, 'subscription', http_status: 404)
         end
+      end
+    
+      def get_customer_card_by_id(customer, card_id)
+        card = customer.dig(:sources, :data)&.detect { |sd| sd[:id] == card_id }
+
+        unless card
+          raise Stripe::InvalidRequestError.new("Invalid card id: #{card_id}", 'card', http_status: 404)
+        end
+
+        card
       end
     end
   end
