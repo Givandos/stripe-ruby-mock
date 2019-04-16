@@ -180,9 +180,9 @@ module StripeMock
         end
         verify_card_present(customer, subscription_plans.first, subscription)
 
-        if subscription[:cancel_at_period_end]
-          subscription[:cancel_at_period_end] = false
-          subscription[:canceled_at] = nil
+        if params[:cancel_at_period_end]
+          subscription[:cancel_at_period_end] = true
+          subscription[:canceled_at] = subscription[:current_period_end]
         end
 
         params[:current_period_start] = subscription[:current_period_start]
